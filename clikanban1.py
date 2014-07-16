@@ -10,8 +10,13 @@ from time import time
 
 __author__ = 'pioo'
 __version__ = '0.2a'
-__board_width__ = int(popen('stty size', 'r').read().split()[1])-1
-__dbfile__ = "/home/pioo/.cli-kanban1.db"  # TODO find dbfile's place
+
+#terminal width
+__board_width__ = int(popen('stty size', 'r').read().split()[1]) - 1
+
+#TODO find dbfile's place
+# is the DB initialized?
+__dbfile__ = "/home/pioo/.cli-kanban1.db"
 if not exists(__dbfile__):
     __needs_init__ = True
 else:
@@ -22,12 +27,21 @@ __cur__ = __conn__.cursor()
 
 def create_db():
     """
-    Initializes the an empty database
-    :return:
+    Initializes an empty database
     """
-    __cur__.execute("CREATE TABLE tasks (id TEXT(2) PRIMARY KEY, data TEXT, tableid NUMBER)")
-    __cur__.execute("CREATE TABLE tables (tableid NUMBER PRIMARY KEY, tablename TEXT)")
-    __cur__.execute("CREATE TABLE log (date NUMBER, taskid TEXT(2), event TEXT, tableid NUMBER)")
+    #TODO error handling of DB initalization
+    __cur__.execute("CREATE TABLE tasks ("
+        "id TEXT(2) PRIMARY KEY, "
+        "data TEXT, "
+        "tableid NUMBER)")
+    __cur__.execute("CREATE TABLE tables ("
+        "tableid NUMBER PRIMARY KEY, "
+        "tablename TEXT)")
+    __cur__.execute("CREATE TABLE log ("
+        "date NUMBER, "
+        "taskid TEXT(2), "
+        "event TEXT, "
+        "tableid NUMBER)")
     tables = (
         (0, 'todo'),
         (1, 'now'),
@@ -37,32 +51,23 @@ def create_db():
     __conn__.commit()
 
 
-def create_data():
-    new_task('task1')
-    new_task('task2')
-    new_task('task3')
-    new_task('task4')
-    new_task('task5')
-    move_task(new_task('task6'), 'now')
-    new_task('task7')
-    move_task(new_task('task8'), 'now')
-    new_task('task9')
-    move_task(new_task('task10'), 'done')
-    new_task('task11')
-
-
 def print_line(nr_tables):
+    """
+    Prints a lame decoration line on the screen.
+    Needs the number of tables to place the + sign to the
+    right place.
+    """
     table_width = __board_width__ / nr_tables
     for i in range(nr_tables):
-        print "+" + "-"*(table_width-2),
+        print "+" + "-" * (table_width - 2),
     print "+"
 
 
 def num_of_tables():
     """
-    Remove this funcion
-    :return: int
+    Remove this funcion?
     """
+    #TODO remove this function
     __cur__.execute("SELECT COUNT(tableid) FROM tables")
     row = __cur__.fetchone()
     return row[0]
@@ -70,10 +75,10 @@ def num_of_tables():
 
 def list_tables():
     """
-    Lists all the available tables from db
-
+    Lists all the available kanban tables
     :return: array
     """
+    #TODO error handling of table listing from DB
     __cur__.execute("SELECT tablename FROM tables ORDER BY tableid")
     tables = []
     while True:
@@ -85,13 +90,22 @@ def list_tables():
 
 
 def log_events(taskid, event, tableid):
+    """
+    A primitive event logging funcion
+    """
+    #TODO error handling of log_events
     date = int(time())
-    sqltatement = "INSERT INTO log VALUES(:date, :taskid, :event, :tableid)"
-    __cur__.execute(sqltatement, {'date': date, 'taskid': taskid, 'event': event, 'tableid': tableid})
+    query = "INSERT INTO log VALUES(:date, :taskid, :event, :tableid)"
+    __cur__.execute(query,
+        {'date': date, 'taskid': taskid, 'event': event, 'tableid': tableid})
     __conn__.commit()
 
 
 def print_log(taskid):
+    """
+    Shows event log of one or all tasks.
+    """
+    #TODO error handling of event log printing
     if taskid == 'all':
         sqlstatement = 'SELECT * FROM log ORDER BY date'
         __cur__.execute(sqlstatement)
@@ -111,16 +125,21 @@ def get_table(table):
     :param table: string, name of the table
     :rtype : tuple of tuples
     """
-    __cur__.execute("SELECT id,data FROM tasks AS T JOIN tables AS B ON T.tableid=B.tableid WHERE B.tablename=?",
+    __cur__.execute(
+        "SELECT id,data "
+        "FROM tasks AS T "
+        "JOIN tables AS B ON T.tableid=B.tableid "
+        "WHERE B.tablename=?",
                     (table,))
     return __cur__.fetchall()
 
 
 def print_table(table=None):
     """
-
-    :param table:
+    Print all the tasks or tasks from one kanban table
+    to the output with lame formatting.
     """
+    #TODO implement some "pretty print" thing
     tasklist = {}
     if table is None:
         # all tables
@@ -171,8 +190,10 @@ def print_table(table=None):
 def new_id():
     """
     Generates a new, unused id for a task
-    :rtype : str
+    A taskid is a HEX number from 0 to FF. Therefore only 256 tasks
+    can live in a kanban database.
     """
+    #TODO decide: is redesigning taskID handling required?
     newid = str(hex(randint(0, 255))).replace('0x', '')
     __cur__.execute("SELECT COUNT(id) FROM tasks WHERE id = ?", (newid,))
     while __cur__.fetchone()[0]:
@@ -181,31 +202,39 @@ def new_id():
     return newid
 
 
-def new_task(s):
+def new_task(s, table='todo'):
     """
-    Creates a new task in the todo table (id 0 in database)
+    Creates a new task in the specified table. Default is todo table.
     :param s: string, task definition
     """
-    sqlstatement = 'INSERT INTO tasks VALUES(:id, :todo, 0)'
+    #TODO error handling of creating a new task
+    #tableID 0 is the todo table
+    table_id = get_table_id('todo')
     newid = new_id()
-    __cur__.execute(sqlstatement, {"id": newid, "todo": s})
+    query = 'INSERT INTO tasks VALUES(:id, :todo, :tableid)'
+    __cur__.execute(query, {"id": newid, "todo": s, "tableid": table_id})
     __conn__.commit()
     log_events(newid, 'created', 0)
     return newid
 
 
-def tablename2id(table):
+def get_table_id(table):
     """
     Converts table name to table id
     :param table: string
     :rtype : str
     """
+    #TODO error handling in get_table_id
     sqlstatement = 'SELECT tableid FROM tables WHERE tablename=?'
     __cur__.execute(sqlstatement, (table,))
     return __cur__.fetchone()[0]
 
 
 def get_task_location(taskid):
+    """
+    Returns the table's id where a specified task is located
+    """
+    #TODO error handling in get_task_location
     sqlstatement = 'SELECT tableid FROM tasks WHERE id=?'
     __cur__.execute(sqlstatement, (taskid,))
     return __cur__.fetchone()[0]
@@ -217,9 +246,11 @@ def move_task(task_id, to_table):
     :param task_id: string, task's id to move
     :param to_table: string, a table's name to move the task into
     """
-    to_table_id = tablename2id(to_table)
+    #TODO error handling of moving a task
+    to_table_id = get_table_id(to_table)
     sqlstatement = 'UPDATE tasks SET tableid=:to_table WHERE id=:task_id'
-    __cur__.execute(sqlstatement, {"task_id": task_id, "to_table": to_table_id})
+    __cur__.execute(sqlstatement,
+        {"task_id": task_id, "to_table": to_table_id})
     __conn__.commit()
     log_events(task_id, 'moved', to_table_id)
 
@@ -229,6 +260,7 @@ def delete_task(task_id):
     Deletes a task
     :param task_id: task's id to delete
     """
+    #TODO error handling of deleting a task
     table_id = get_task_location(task_id)
     sqlstatement = 'DELETE FROM tasks WHERE id=?'
     __cur__.execute(sqlstatement, (task_id,))
@@ -241,11 +273,17 @@ def empty_table(table):
     Deletes all the tasks of the specified table
     :param table: string, table name to empty
     """
+    #TODO error handling of table clearing
     for task, table in get_table(table):
         delete_task(task)
 
 
 def parse_args():
+    """
+    Argument parsing as usual.
+    Hence this is a command line application this def is the
+    interface.
+    """
     description = "A CLI Kanban dashboard"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--version', action="version", version=__version__)
@@ -257,7 +295,7 @@ def parse_args():
                             choices=['todo', 'now', 'done', 'all'],
                             nargs='?',
                             metavar='table',
-                            help="lists the dashboard or a table: todo, now, done")
+                            help="lists the dashboard or a table")
     task_group.add_argument('-n', '--new',
                             dest="task_desc",
                             metavar="DESC",
@@ -274,14 +312,16 @@ def parse_args():
     task_group.add_argument('-m', '--move',
                             dest='move',
                             metavar='movestring',
-                            help="moves a specified task from one table to another, format: id,tablename")
+                            help="moves a specified task from one table to "
+                                "another, format: id,tablename")
     task_group.add_argument('-c', '--clear',
                             dest='clear',
                             choices=['todo', 'now', 'done', 'all'],
                             const='done',
                             nargs='?',
                             metavar='table',
-                            help="clear one or all table, default: done, available options: todo, now, done, all")
+                            help="clear one or all table, default: done, "
+                                "available options: todo, now, done, all")
     task_group.add_argument('-s', '--showlog',
                             dest='log',
                             nargs='?',
@@ -297,8 +337,10 @@ def parse_args():
 
 
 def main():
+    """
+    Main program.
+    """
     parser, args = parse_args()
-    #print args
 
     if __needs_init__:
         create_db()
