@@ -12,17 +12,17 @@ __author__ = 'pioo'
 __version__ = '0.2a'
 
 #terminal width
-__board_width__ = int(popen('stty size', 'r').read().split()[1]) - 1
+_board_width = int(popen('stty size', 'r').read().split()[1]) - 1
 
 #TODO find dbfile's place
 # is the DB initialized?
-__dbfile__ = "/home/pioo/.cli-kanban1.db"
-if not exists(__dbfile__):
-    __needs_init__ = True
+_dbfile = "/home/pioo/.cli-kanban1.db"
+if not exists(_dbfile):
+    _needs_init = True
 else:
-    __needs_init__ = False
-__conn__ = sqlite3.connect(__dbfile__)
-__cur__ = __conn__.cursor()
+    _needs_init = False
+_conn = sqlite3.connect(_dbfile)
+_cur = _conn.cursor()
 
 
 def create_db():
@@ -30,14 +30,14 @@ def create_db():
     Initializes an empty database
     """
     #TODO error handling of DB initalization
-    __cur__.execute("CREATE TABLE tasks ("
+    _cur.execute("CREATE TABLE tasks ("
         "id TEXT(2) PRIMARY KEY, "
         "data TEXT, "
         "tableid NUMBER)")
-    __cur__.execute("CREATE TABLE tables ("
+    _cur.execute("CREATE TABLE tables ("
         "tableid NUMBER PRIMARY KEY, "
         "tablename TEXT)")
-    __cur__.execute("CREATE TABLE log ("
+    _cur.execute("CREATE TABLE log ("
         "date NUMBER, "
         "taskid TEXT(2), "
         "event TEXT, "
@@ -47,8 +47,8 @@ def create_db():
         (1, 'now'),
         (2, 'done')
     )
-    __cur__.executemany("INSERT INTO tables VALUES(?, ?)", tables)
-    __conn__.commit()
+    _cur.executemany("INSERT INTO tables VALUES(?, ?)", tables)
+    _conn.commit()
 
 
 def print_line(nr_tables):
@@ -57,7 +57,7 @@ def print_line(nr_tables):
     Needs the number of tables to place the + sign to the
     right place.
     """
-    table_width = __board_width__ / nr_tables
+    table_width = _board_width / nr_tables
     for i in range(nr_tables):
         print "+" + "-" * (table_width - 2),
     print "+"
@@ -68,8 +68,8 @@ def num_of_tables():
     Remove this funcion?
     """
     #TODO remove this function
-    __cur__.execute("SELECT COUNT(tableid) FROM tables")
-    row = __cur__.fetchone()
+    _cur.execute("SELECT COUNT(tableid) FROM tables")
+    row = _cur.fetchone()
     return row[0]
 
 
@@ -79,10 +79,10 @@ def list_tables():
     :return: array
     """
     #TODO error handling of table listing from DB
-    __cur__.execute("SELECT tablename FROM tables ORDER BY tableid")
+    _cur.execute("SELECT tablename FROM tables ORDER BY tableid")
     tables = []
     while True:
-        row = __cur__.fetchone()
+        row = _cur.fetchone()
         if row is None:
             break
         tables.append(row[0])
@@ -96,9 +96,9 @@ def log_events(taskid, event, tableid):
     #TODO error handling of log_events
     date = int(time())
     query = "INSERT INTO log VALUES(:date, :taskid, :event, :tableid)"
-    __cur__.execute(query,
+    _cur.execute(query,
         {'date': date, 'taskid': taskid, 'event': event, 'tableid': tableid})
-    __conn__.commit()
+    _conn.commit()
 
 
 def print_log(taskid):
@@ -108,12 +108,12 @@ def print_log(taskid):
     #TODO error handling of event log printing
     if taskid == 'all':
         sqlstatement = 'SELECT * FROM log ORDER BY date'
-        __cur__.execute(sqlstatement)
+        _cur.execute(sqlstatement)
     else:
         sqlstatement = 'SELECT * FROM log WHERE taskid=? ORDER BY date'
-        __cur__.execute(sqlstatement, (taskid,))
+        _cur.execute(sqlstatement, (taskid,))
     while True:
-        row = __cur__.fetchone()
+        row = _cur.fetchone()
         if not row:
             break
         print "{0} {1}\t'{2:^10}'\t{3}".format(*row)
@@ -125,13 +125,13 @@ def get_table(table):
     :param table: string, name of the table
     :rtype : tuple of tuples
     """
-    __cur__.execute(
+    _cur.execute(
         "SELECT id,data "
         "FROM tasks AS T "
         "JOIN tables AS B ON T.tableid=B.tableid "
         "WHERE B.tablename=?",
                     (table,))
-    return __cur__.fetchall()
+    return _cur.fetchall()
 
 
 def print_table(table=None):
@@ -158,7 +158,7 @@ def print_table(table=None):
 
         nr_records = 0
         nr_tables = len(foo)
-        table_width = __board_width__ / nr_tables
+        table_width = _board_width / nr_tables
         for i in range(nr_tables):
             if len(foo[i]) > nr_records:
                 nr_records = len(foo[i])
@@ -195,10 +195,10 @@ def new_id():
     """
     #TODO decide: is redesigning taskID handling required?
     newid = str(hex(randint(0, 255))).replace('0x', '')
-    __cur__.execute("SELECT COUNT(id) FROM tasks WHERE id = ?", (newid,))
-    while __cur__.fetchone()[0]:
+    _cur.execute("SELECT COUNT(id) FROM tasks WHERE id = ?", (newid,))
+    while _cur.fetchone()[0]:
         newid = str(hex(randint(0, 255))).replace('0x', '')
-        __cur__.execute("SELECT COUNT(id) FROM tasks WHERE id = ?", (newid,))
+        _cur.execute("SELECT COUNT(id) FROM tasks WHERE id = ?", (newid,))
     return newid
 
 
@@ -212,8 +212,8 @@ def new_task(s, table='todo'):
     table_id = get_table_id('todo')
     newid = new_id()
     query = 'INSERT INTO tasks VALUES(:id, :todo, :tableid)'
-    __cur__.execute(query, {"id": newid, "todo": s, "tableid": table_id})
-    __conn__.commit()
+    _cur.execute(query, {"id": newid, "todo": s, "tableid": table_id})
+    _conn.commit()
     log_events(newid, 'created', 0)
     return newid
 
@@ -226,8 +226,8 @@ def get_table_id(table):
     """
     #TODO error handling in get_table_id
     sqlstatement = 'SELECT tableid FROM tables WHERE tablename=?'
-    __cur__.execute(sqlstatement, (table,))
-    return __cur__.fetchone()[0]
+    _cur.execute(sqlstatement, (table,))
+    return _cur.fetchone()[0]
 
 
 def get_task_location(taskid):
@@ -236,8 +236,8 @@ def get_task_location(taskid):
     """
     #TODO error handling in get_task_location
     sqlstatement = 'SELECT tableid FROM tasks WHERE id=?'
-    __cur__.execute(sqlstatement, (taskid,))
-    return __cur__.fetchone()[0]
+    _cur.execute(sqlstatement, (taskid,))
+    return _cur.fetchone()[0]
 
 
 def move_task(task_id, to_table):
@@ -249,9 +249,9 @@ def move_task(task_id, to_table):
     #TODO error handling of moving a task
     to_table_id = get_table_id(to_table)
     sqlstatement = 'UPDATE tasks SET tableid=:to_table WHERE id=:task_id'
-    __cur__.execute(sqlstatement,
+    _cur.execute(sqlstatement,
         {"task_id": task_id, "to_table": to_table_id})
-    __conn__.commit()
+    _conn.commit()
     log_events(task_id, 'moved', to_table_id)
 
 
@@ -263,8 +263,8 @@ def delete_task(task_id):
     #TODO error handling of deleting a task
     table_id = get_task_location(task_id)
     sqlstatement = 'DELETE FROM tasks WHERE id=?'
-    __cur__.execute(sqlstatement, (task_id,))
-    __conn__.commit()
+    _cur.execute(sqlstatement, (task_id,))
+    _conn.commit()
     log_events(task_id, 'deleted', table_id)
 
 
@@ -342,7 +342,7 @@ def main():
     """
     parser, args = parse_args()
 
-    if __needs_init__:
+    if _needs_init:
         create_db()
     if args.table:
         if args.table == "all":
@@ -371,7 +371,7 @@ def main():
     else:
         print_table()
 
-    __conn__.close()
+    _conn.close()
 
 
 if __name__ == "__main__":
