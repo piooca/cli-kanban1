@@ -14,7 +14,7 @@ __version__ = '0.2a'
 # terminal width
 _board_width = int(popen('stty size', 'r').read().split()[1]) - 1
 
-#TODO find dbfile's place
+# TODO find dbfile's place
 # is the DB initialized?
 _dbfile = expanduser("~") + "/.cli-kanban1.db"
 if not exists(_dbfile):
@@ -316,20 +316,20 @@ def parse_args():
 
     table_group = parser.add_argument_group('table manipulation options')
     table_group.add_argument('-l', '--list',
-                            dest="table",
-                            const="all",
-                            choices=['todo', 'now', 'done', 'all'],
-                            nargs='?',
-                            metavar='table',
-                            help="lists the dashboard or a table")
+                             dest="table",
+                             const="all",
+                             choices=['todo', 'now', 'done', 'all'],
+                             nargs='?',
+                             metavar='table',
+                             help="lists the dashboard or a table")
     table_group.add_argument('-c', '--clear',
-                            dest='clear',
-                            choices=['todo', 'now', 'done', 'all'],
-                            const='done',
-                            nargs='?',
-                            metavar='table',
-                            help="clear one or all table, default: done, "
-                                 "available options: todo, now, done, all")
+                             dest='clear',
+                             choices=['todo', 'now', 'done', 'all'],
+                             const='done',
+                             nargs='?',
+                             metavar='table',
+                             help="clear one or all table, default: done, "
+                                  "available options: todo, now, done, all")
 
     main_group = parser.add_argument_group('main argument')
     main_group.add_argument('task',
