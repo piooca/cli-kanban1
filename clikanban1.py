@@ -3,7 +3,7 @@
 
 import sqlite3
 from os import popen
-from os.path import exists
+from os.path import exists, expanduser
 import argparse
 from random import randint
 from time import time
@@ -16,7 +16,7 @@ _board_width = int(popen('stty size', 'r').read().split()[1]) - 1
 
 #TODO find dbfile's place
 # is the DB initialized?
-_dbfile = "/home/pioo/.cli-kanban1.db"
+_dbfile = expanduser("~") + "/.cli-kanban1.db"
 if not exists(_dbfile):
     _needs_init = True
 else:
