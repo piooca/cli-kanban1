@@ -284,14 +284,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--version', action="version", version=__version__)
 
-    task_group = parser.add_argument_group('task view/manipulation options')
-    task_group.add_argument('-l', '--list',
-                            dest="table",
-                            const="all",
-                            choices=['todo', 'now', 'done', 'all'],
-                            nargs='?',
-                            metavar='table',
-                            help="lists the dashboard or a table")
+    task_group = parser.add_argument_group('task manipulation options')
     task_group.add_argument('-n', '--new',
                             dest="task_desc",
                             metavar="DESC",
@@ -310,7 +303,26 @@ def parse_args():
                             metavar='movestring',
                             help="moves a specified task from one table to "
                                  "another, format: id,tablename")
-    task_group.add_argument('-c', '--clear',
+    task_group.add_argument('-d', '--delete',
+                            dest="delete_id",
+                            metavar="ID",
+                            help="deletes a task from the board")
+    task_group.add_argument('-s', '--showlog',
+                            dest='log',
+                            nargs='?',
+                            metavar='taskid',
+                            const='all',
+                            help='Show task log')
+
+    table_group = parser.add_argument_group('table manipulation options')
+    table_group.add_argument('-l', '--list',
+                            dest="table",
+                            const="all",
+                            choices=['todo', 'now', 'done', 'all'],
+                            nargs='?',
+                            metavar='table',
+                            help="lists the dashboard or a table")
+    table_group.add_argument('-c', '--clear',
                             dest='clear',
                             choices=['todo', 'now', 'done', 'all'],
                             const='done',
@@ -318,12 +330,6 @@ def parse_args():
                             metavar='table',
                             help="clear one or all table, default: done, "
                                  "available options: todo, now, done, all")
-    task_group.add_argument('-s', '--showlog',
-                            dest='log',
-                            nargs='?',
-                            metavar='taskid',
-                            const='all',
-                            help='Show task log')
 
     main_group = parser.add_argument_group('main argument')
     main_group.add_argument('task',
@@ -338,6 +344,7 @@ def main():
     """
     parser, args = parse_args()
 
+    # non-existent database file
     if _needs_init:
         create_db()
     if args.table:
@@ -345,25 +352,35 @@ def main():
             print_table()
         else:
             print_table(args.table)
+    # pick a task
     elif args.pick_id:
         move_task(args.pick_id, 'now')
+    # finish a task
     elif args.finish_id:
         move_task(args.finish_id, 'done')
+    # delete a task
+    elif args.delete_id:
+        delete_task(args.delete_id)
+    # move a task
+    elif args.move:
+        task_id, table = args.move.split(',')
+        move_task(task_id, table)
+    # clear one or all tables
     elif args.clear:
         if args.clear != 'all':
             empty_table(args.clear)
         else:
-            for table in ['todo', 'now', 'done']:
+            for table in list_tables():
                 empty_table(table)
-    elif args.move:
-        task_id, table = args.move.split(',')
-        move_task(task_id, table)
+    # create new task
     elif args.task_desc:
         new_task(' '.join(args.task_desc).strip().decode('utf-8'))
     elif args.task:
         new_task(' '.join(args.task).strip().decode('utf-8'))
+    # show log
     elif args.log:
         print_log(args.log)
+    # default action is to show the dashboard (all tables)
     else:
         print_table()
 
