@@ -11,7 +11,7 @@ from time import time
 __author__ = 'pioo'
 __version__ = '0.2a'
 
-#terminal width
+# terminal width
 _board_width = int(popen('stty size', 'r').read().split()[1]) - 1
 
 #TODO find dbfile's place
@@ -31,17 +31,17 @@ def create_db():
     """
     #TODO error handling of DB initalization
     _cur.execute("CREATE TABLE tasks ("
-        "id TEXT(2) PRIMARY KEY, "
-        "data TEXT, "
-        "tableid NUMBER)")
+                 "id TEXT(2) PRIMARY KEY, "
+                 "data TEXT, "
+                 "tableid NUMBER)")
     _cur.execute("CREATE TABLE tables ("
-        "tableid NUMBER PRIMARY KEY, "
-        "tablename TEXT)")
+                 "tableid NUMBER PRIMARY KEY, "
+                 "tablename TEXT)")
     _cur.execute("CREATE TABLE log ("
-        "date NUMBER, "
-        "taskid TEXT(2), "
-        "event TEXT, "
-        "tableid NUMBER)")
+                 "date NUMBER, "
+                 "taskid TEXT(2), "
+                 "event TEXT, "
+                 "tableid NUMBER)")
     tables = (
         (0, 'todo'),
         (1, 'now'),
@@ -97,7 +97,7 @@ def log_events(taskid, event, tableid):
     date = int(time())
     query = "INSERT INTO log VALUES(:date, :taskid, :event, :tableid)"
     _cur.execute(query,
-        {'date': date, 'taskid': taskid, 'event': event, 'tableid': tableid})
+                 {'date': date, 'taskid': taskid, 'event': event, 'tableid': tableid})
     _conn.commit()
 
 
@@ -130,7 +130,7 @@ def get_table(table):
         "FROM tasks AS T "
         "JOIN tables AS B ON T.tableid=B.tableid "
         "WHERE B.tablename=?",
-                    (table,))
+        (table,))
     return _cur.fetchall()
 
 
@@ -140,50 +140,47 @@ def print_table(table=None):
     to the output with lame formatting.
     """
     #TODO implement some "pretty print" thing
-    tasklist = {}
+    #TODO use some table printing library
+    tasklists = {}
     if table is None:
-        # all tables
+        # print all tables
         tables = list_tables()
-        foo = []
-        bar = []
-        i = 0
-        for table in tables:
-            bar.append(table.upper())
-            tasklist[table] = get_table(table)
-            for taskid, taskname in tasklist[table]:
-                bar.append((taskid, taskname))
-            foo.append(bar)
-            bar = []
-            i += 1
-
-        nr_records = 0
-        nr_tables = len(foo)
-        table_width = _board_width / nr_tables
-        for i in range(nr_tables):
-            if len(foo[i]) > nr_records:
-                nr_records = len(foo[i])
+        table_number = len(tables)
+        table_width = _board_width / len(tables)
 
         #header
-        print_line(nr_tables)
-        for i in range(nr_tables):
-            print "|" + foo[i][0].center(table_width - 2),
-        print "|"
-        print_line(nr_tables)
+        decor = "+" + "-" * (table_width - 1)
+        print decor * table_number,
 
-        #rows
-        for j in range(1, nr_records):
-            for i in range(nr_tables):
-                if len(foo[i]) > j:
-                    print "|" + foo[i][j][0].ljust(2) + " " +\
-                    foo[i][j][1][:table_width - 5].ljust(table_width - 5),
+        for table in tables:
+            print "|" + table.center(table_width - 2),
+            tasklists[table] = get_table(table)
+        print
+        print decor * table_number,
+        have_data = True
+        while have_data:
+            row = []
+            have_data = False
+            for table in tables:
+                try:
+                    row.append(tasklists[table].pop(0))
+                    have_data = True
+                except IndexError:
+                    row.append('')
+            if not have_data:
+                break
+            for element in row:
+                if element:
+                    print "|" + element[0].ljust(3), element[1].ljust(table_width - 6),
                 else:
-                    print "|" + ''.ljust(table_width - 2),
-            print "|"
-        print_line(nr_tables)
+                    print "|" + ' '.ljust(table_width - 2),
+            print
+        print decor * table_number,
     else:
-        tasklist[table] = get_table(table)
+        # print just the specified table
+        tasklists[table] = get_table(table)
         print table.upper()
-        for taskid, taskname in tasklist[table]:
+        for taskid, taskname in tasklists[table]:
             print "%s\t%s" % (taskid, taskname)
 
 
@@ -208,8 +205,7 @@ def new_task(s, table='todo'):
     :param s: string, task definition
     """
     #TODO error handling of creating a new task
-    #tableID 0 is the todo table
-    table_id = get_table_id('todo')
+    table_id = get_table_id(table)
     newid = new_id()
     query = 'INSERT INTO tasks VALUES(:id, :todo, :tableid)'
     _cur.execute(query, {"id": newid, "todo": s, "tableid": table_id})
@@ -250,7 +246,7 @@ def move_task(task_id, to_table):
     to_table_id = get_table_id(to_table)
     sqlstatement = 'UPDATE tasks SET tableid=:to_table WHERE id=:task_id'
     _cur.execute(sqlstatement,
-        {"task_id": task_id, "to_table": to_table_id})
+                 {"task_id": task_id, "to_table": to_table_id})
     _conn.commit()
     log_events(task_id, 'moved', to_table_id)
 
@@ -313,7 +309,7 @@ def parse_args():
                             dest='move',
                             metavar='movestring',
                             help="moves a specified task from one table to "
-                                "another, format: id,tablename")
+                                 "another, format: id,tablename")
     task_group.add_argument('-c', '--clear',
                             dest='clear',
                             choices=['todo', 'now', 'done', 'all'],
@@ -321,7 +317,7 @@ def parse_args():
                             nargs='?',
                             metavar='table',
                             help="clear one or all table, default: done, "
-                                "available options: todo, now, done, all")
+                                 "available options: todo, now, done, all")
     task_group.add_argument('-s', '--showlog',
                             dest='log',
                             nargs='?',
