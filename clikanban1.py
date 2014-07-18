@@ -6,7 +6,7 @@ from os import popen
 from os.path import exists, expanduser
 import argparse
 from random import randint
-from time import time
+import time
 
 __author__ = 'pioo'
 __version__ = '0.2a'
@@ -94,7 +94,7 @@ def log_events(taskid, event, tableid):
     A primitive event logging funcion
     """
     #TODO error handling of log_events
-    date = int(time())
+    date = int(time.time())
     query = "INSERT INTO log VALUES(:date, :taskid, :event, :tableid)"
     _cur.execute(query,
                  {'date': date, 'taskid': taskid, 'event': event, 'tableid': tableid})
@@ -106,17 +106,30 @@ def print_log(taskid):
     Shows event log of one or all tasks.
     """
     #TODO error handling of event log printing
-    if taskid == 'all':
-        sqlstatement = 'SELECT * FROM log ORDER BY date'
-        _cur.execute(sqlstatement)
+    if taskid == 'dump':
+        query = 'SELECT * FROM log ORDER BY date'
+        _cur.execute(query)
+    elif taskid == 'all':
+        query = 'SELECT date,data,event,tablename ' \
+                'FROM log AS L ' \
+                'JOIN tasks AS T1 on L.taskid=T1.id ' \
+                'JOIN tables AS T2 on L.tableid=T2.tableid ' \
+                'ORDER BY date'
+        _cur.execute(query)
     else:
-        sqlstatement = 'SELECT * FROM log WHERE taskid=? ORDER BY date'
-        _cur.execute(sqlstatement, (taskid,))
+        query = 'SELECT date,data,event,tablename ' \
+                'FROM log AS L ' \
+                'JOIN tasks AS T1 on L.taskid=T1.taskid ' \
+                'JOIN tables AS T2 on L.tableid=T2.tableid ' \
+                'WHERE L.taskid=?' \
+                'ORDER BY date'
+        _cur.execute(query, (taskid,))
     while True:
         row = _cur.fetchone()
         if not row:
             break
-        print "{0} {1}\t'{2:^10}'\t{3}".format(*row)
+        print time.strftime("%Y/%m/%d %H:%M", time.localtime(int(row[0]))),
+        print "{2:<8}[{3:^8}] {1:{width}}".format(*row, width=_board_width/3)
 
 
 def get_table(table):
