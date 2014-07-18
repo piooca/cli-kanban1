@@ -160,8 +160,6 @@ def print_table(table=None):
         tables = list_tables()
         table_number = len(tables)
         table_width = _board_width / len(tables)
-        print table_width
-        print _board_width
 
         #printing header
         decor = "+" + "-" * (table_width - 1)
@@ -372,16 +370,20 @@ def main():
     # pick a task
     elif args.pick_id:
         move_task(args.pick_id, 'now')
+        print_table()
     # finish a task
     elif args.finish_id:
         move_task(args.finish_id, 'done')
+        print_table()
     # delete a task
     elif args.delete_id:
         delete_task(args.delete_id)
+        print_table()
     # move a task
     elif args.move:
         task_id, table = args.move.split(',')
         move_task(task_id, table)
+        print_table()
     # clear one or all tables
     elif args.clear:
         if args.clear != 'all':
@@ -389,11 +391,14 @@ def main():
         else:
             for table in list_tables():
                 empty_table(table)
+        print_table()
     # create new task
     elif args.task_desc:
         new_task(' '.join(args.task_desc).strip().decode('utf-8'))
+        print_table()
     elif args.task:
         new_task(' '.join(args.task).strip().decode('utf-8'))
+        print_table()
     # show log
     elif args.log:
         print_log(args.log)
