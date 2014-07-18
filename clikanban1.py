@@ -119,7 +119,7 @@ def print_log(taskid):
     else:
         query = 'SELECT date,data,event,tablename ' \
                 'FROM log AS L ' \
-                'JOIN tasks AS T1 on L.taskid=T1.taskid ' \
+                'JOIN tasks AS T1 on L.taskid=T1.id ' \
                 'JOIN tables AS T2 on L.tableid=T2.tableid ' \
                 'WHERE L.taskid=?' \
                 'ORDER BY date'
