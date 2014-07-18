@@ -147,16 +147,20 @@ def print_table(table=None):
         tables = list_tables()
         table_number = len(tables)
         table_width = _board_width / len(tables)
+        print table_width
+        print _board_width
 
-        #header
+        #printing header
         decor = "+" + "-" * (table_width - 1)
-        print decor * table_number,
+        print decor * table_number + "+"
 
         for table in tables:
             print "|" + table.center(table_width - 2),
             tasklists[table] = get_table(table)
-        print
-        print decor * table_number,
+        print "|"
+        print decor * table_number + "+"
+
+        #printing the data
         have_data = True
         while have_data:
             row = []
@@ -171,11 +175,11 @@ def print_table(table=None):
                 break
             for element in row:
                 if element:
-                    print "|" + element[0].ljust(3), element[1].ljust(table_width - 6),
+                    print "|" + element[0].ljust(3) + element[1][:table_width-5].ljust(table_width - 5),
                 else:
                     print "|" + ' '.ljust(table_width - 2),
-            print
-        print decor * table_number,
+            print "|"
+        print decor * table_number  + "+"
     else:
         # print just the specified table
         tasklists[table] = get_table(table)
