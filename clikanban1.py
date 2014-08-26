@@ -3,16 +3,21 @@
 
 import sqlite3
 from os import popen
+from os import environ
 from os.path import exists, expanduser
 import argparse
 from random import randint
 import time
+from sys import stdout
 
 __author__ = 'pioo'
 __version__ = '0.2a'
 
 # terminal width
-_board_width = int(popen('stty size', 'r').read().split()[1]) - 1
+if environ['TERM'] == 'DUMB':
+    _board_width = 120
+else:
+    _board_width = int(popen('stty size', 'r').read().split()[1]) - 1
 
 # TODO find dbfile's place
 # is the DB initialized?
@@ -160,16 +165,18 @@ def print_table(table=None):
         tables = list_tables()
         table_number = len(tables)
         table_width = _board_width / len(tables)
+        msg = ''
 
         #printing header
         decor = "+" + "-" * (table_width - 1)
-        print decor * table_number + "+"
+        msg += decor * table_number
+        msg += '+\n'
 
         for table in tables:
-            print "|" + table.center(table_width - 2),
+            msg += "|" + table.center(table_width - 2) + ' '
             tasklists[table] = get_table(table)
-        print "|"
-        print decor * table_number + "+"
+        msg += '|\n'
+        msg += decor * table_number + "+\n"
 
         #printing the data
         have_data = True
@@ -186,11 +193,12 @@ def print_table(table=None):
                 break
             for element in row:
                 if element:
-                    print "|" + element[0].ljust(3) + element[1][:table_width-5].ljust(table_width - 5),
+                    msg += "|" + element[0].ljust(3) + element[1][:table_width-4].ljust(table_width - 4)
                 else:
-                    print "|" + ' '.ljust(table_width - 2),
-            print "|"
-        print decor * table_number  + "+"
+                    msg += "|" + ' '.ljust(table_width - 1)
+            msg += '|\n'
+        msg += decor * table_number  + "+\n"
+        stdout.write(msg)
     else:
         # print just the specified table
         tasklists[table] = get_table(table)
