@@ -19,7 +19,7 @@ if environ['TERM'] == 'DUMB':
 else:
     _board_width = int(popen('stty size', 'r').read().split()[1]) - 1
 
-# TODO find dbfile's place
+#TODO find dbfile's place
 # is the DB initialized?
 _dbfile = expanduser("~") + "/.cli-kanban1.db"
 if not exists(_dbfile):
@@ -102,7 +102,7 @@ def log_events(taskid, event, tableid):
     date = int(time.time())
     query = "INSERT INTO log VALUES(:date, :taskid, :event, :tableid)"
     _cur.execute(query,
-                 {'date': date, 'taskid': taskid, 'event': event, 'tableid': tableid})
+        {'date': date, 'taskid': taskid, 'event': event, 'tableid': tableid})
     _conn.commit()
 
 
@@ -134,7 +134,7 @@ def print_log(taskid):
         if not row:
             break
         print time.strftime("%Y/%m/%d %H:%M", time.localtime(int(row[0]))),
-        print "{2:<8}[{3:^8}] {1:{width}}".format(*row, width=_board_width/3)
+        print "{2:<8}[{3:^8}] {1:{width}}".format(*row, width=_board_width / 3)
 
 
 def get_table(table):
@@ -167,7 +167,7 @@ def print_table(table=None):
         table_width = _board_width / len(tables)
         msg = ''
 
-        #printing header
+        # printing header
         decor = "+" + "-" * (table_width - 1)
         msg += decor * table_number
         msg += '+\n'
@@ -178,7 +178,7 @@ def print_table(table=None):
         msg += '|\n'
         msg += decor * table_number + "+\n"
 
-        #printing the data
+        # printing the data
         have_data = True
         while have_data:
             row = []
@@ -193,11 +193,14 @@ def print_table(table=None):
                 break
             for element in row:
                 if element:
-                    msg += "|" + element[0].ljust(3) + element[1][:table_width-4].ljust(table_width - 4)
+                    msg += "|" + \
+                        element[0].ljust(
+                            3) + element[1][:table_width - 4].ljust(
+                                table_width - 4)
                 else:
                     msg += "|" + ' '.ljust(table_width - 1)
             msg += '|\n'
-        msg += decor * table_number  + "+\n"
+        msg += decor * table_number + "+\n"
         stdout.write(msg)
     else:
         # print just the specified table
